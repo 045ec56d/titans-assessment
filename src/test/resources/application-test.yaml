@@ -1,0 +1,5 @@
+spring:
+  profile: test
+  data.mongodb:
+    uri: "mongodb://b9bcf198-71d2-4910-a1e3-f4e0eb30498e:c2fcd96f-94bd-4038-aab5-eb741ca39233@localhost:27017/admin"
+    database: osbdb

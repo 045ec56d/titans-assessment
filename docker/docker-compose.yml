@@ -1,0 +1,29 @@
+version: '2'
+
+services:
+  mongo:
+    image: mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: "b9bcf198-71d2-4910-a1e3-f4e0eb30498e"
+      MONGO_INITDB_ROOT_PASSWORD: "c2fcd96f-94bd-4038-aab5-eb741ca39233"
+
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - 9081:8081
+    depends_on:
+      - mongo
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: "b9bcf198-71d2-4910-a1e3-f4e0eb30498e"
+      ME_CONFIG_MONGODB_ADMINPASSWORD: "c2fcd96f-94bd-4038-aab5-eb741ca39233"
+
+  rabbitmq:
+    image: rabbitmq
+    restart: always
+    ports:
+      - 9082:15672
+      - 5672:5672

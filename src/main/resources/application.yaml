@@ -1,0 +1,50 @@
+---
+spring:
+  cloud:
+    openservicebroker:
+      catalog:
+        services:
+          - id: "f8e0bb08-bd8d-4899-9058-28ef2a3e2701"
+            name: "MongoDB (in Docker)"
+            description: "A mongoDB in Docker deployment"
+            bindable: false       # has to switch to true if doing the stretch goal
+            planUpdateable: false
+            instancesRetriveable: false
+            bindingsRetrievable: false
+            plans:
+              - id: "ed1bda66-bc7b-495c-a8c2-3740217085be"
+                name: "db"
+                description: "default"
+                bindable: false       # has to switch to true if doing the stretch goal
+                free: true
+                schemas:
+                  serviceInstance:
+                    create:
+                      parameters:
+                        "$schema": "http://json-schema.org/draft-07/schema#"
+                        type: object
+                        required:
+                          - "mongodb_port"
+                        properties:
+                          mongodb_port:
+                            type: "number"
+              - id: "c1736c2a-44fb-48e5-b3c5-49f0c1c53baa"
+                name: "db with administration"
+                description: "default"
+                bindable: false       # has to switch to true if doing the stretch goal
+                free: true
+                schemas:
+                  serviceInstance:
+                    create:
+                      parameters:
+                        "$schema": "http://json-schema.org/draft-07/schema#"
+                        type: object
+                        required:
+                          - "mongodb_port"
+                          - "admin_port"
+                        properties:
+                          mongodb_port:
+                            type: "number"
+                          admin_port:
+                            type: "number"
+            tags: [ "mongodb", "docker", "noSQL" ]

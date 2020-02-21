@@ -1,0 +1,68 @@
+plugins {
+	id 'org.springframework.boot' version '2.2.4.RELEASE'
+	id 'io.spring.dependency-management' version '1.0.9.RELEASE'
+	id 'org.asciidoctor.convert' version '1.5.8'
+	id 'java'
+	id 'groovy'
+}
+
+group = 'com.swisscom.cloud.mongodb'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '13'
+
+configurations {
+	developmentOnly
+	runtimeClasspath {
+		extendsFrom developmentOnly
+	}
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+
+	// needed as testcontainers is using an reduced copy of the same package.
+	testImplementation.exclude group: "com.github.docker-java"
+}
+
+repositories {
+	mavenCentral()
+}
+
+ext {
+	set('snippetsDir', file("build/generated-snippets"))
+	set('springCloudVersion', "Hoxton.SR1")
+}
+
+dependencies {
+	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+	// Spring Boot Libraries
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springframework.boot:spring-boot-starter-amqp'
+	implementation 'org.springframework.boot:spring-boot-starter-data-mongodb-reactive'
+	implementation 'org.springframework.boot:spring-boot-starter-integration'
+
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.cloud:spring-cloud-starter-open-service-broker:3.1.0.RELEASE'
+
+	// Docker API (3.2.0 is supporting java13)
+	implementation 'com.github.docker-java:docker-java:3.2.0-rc4'
+
+	// Use the awesome Spock testing and specification framework
+	testImplementation 'org.spockframework:spock-core:1.2-groovy-2.5'
+	testImplementation 'org.spockframework:spock-spring:1.2-groovy-2.5'
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-webflux'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc'
+
+	// test containers for starting and using docker in unit tests
+	testImplementation "org.testcontainers:testcontainers:1.12.4"
+	testImplementation "org.testcontainers:spock:1.12.4"
+}
+
+dependencyManagement {
+	imports {
+		mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+	}
+}
