@@ -1,19 +1,15 @@
 package com.swisscom.cloud.mongodb.dockerbroker.rest
 
 import com.swisscom.cloud.mongodb.dockerbroker.BaseSpecification
-import org.springframework.cloud.servicebroker.model.binding.CreateServiceInstanceAppBindingResponse
-import org.springframework.cloud.servicebroker.model.binding.CreateServiceInstanceBindingRequest
-import org.springframework.cloud.servicebroker.model.binding.DeleteServiceInstanceBindingResponse
-import org.springframework.cloud.servicebroker.model.instance.CreateServiceInstanceRequest
-import org.springframework.cloud.servicebroker.model.instance.CreateServiceInstanceResponse
-import org.springframework.cloud.servicebroker.model.instance.GetLastServiceOperationResponse
-import org.springframework.cloud.servicebroker.model.instance.OperationState
+import org.springframework.cloud.servicebroker.model.instance.*
 import org.springframework.http.MediaType
+import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
 import spock.lang.Shared
 
 import static java.time.Duration.ofMillis
 
+@ActiveProfiles("test")
 class ProvisioningMongoDockerSpecification extends BaseSpecification {
     static UUID serviceInstanceId
     static UUID serviceBindingId
@@ -94,6 +90,6 @@ class ProvisioningMongoDockerSpecification extends BaseSpecification {
 
         then:
         exchange.expectStatus().is2xxSuccessful()
-        exchange.expectBody(CreateServiceInstanceResponse)
+        exchange.expectBody(DeleteServiceInstanceResponse)
     }
 }
