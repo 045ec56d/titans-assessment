@@ -1,6 +1,5 @@
 package com.swisscom.cloud.mongodb.dockerbroker;
 
-import com.swisscom.cloud.mongodb.dockerbroker.docker.DockerMongoDBServiceCreator;
 import com.swisscom.cloud.mongodb.dockerbroker.docker.DockerService;
 import com.swisscom.cloud.mongodb.dockerbroker.persistence.DockerMongoServiceEntity;
 import com.swisscom.cloud.mongodb.dockerbroker.persistence.DockerMongoServiceRepository;
@@ -17,11 +16,10 @@ public class DockerMongoServiceInstanceService implements ServiceInstanceService
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DockerMongoServiceInstanceService.class);
 
-    @Autowired
-    DockerMongoServiceRepository repository;
+    public static final String imageName = "mongo";
 
     @Autowired
-    DockerMongoDBServiceCreator mongoDBServiceCreator;
+    DockerMongoServiceRepository repository;
 
     @Autowired
     DockerService dockerService;
@@ -36,11 +34,11 @@ public class DockerMongoServiceInstanceService implements ServiceInstanceService
                         if (exists)
                             return Mono.just(responseBuilder.instanceExisted(true).build());
                         else {
-                            return mongoDBServiceCreator.createInstance()
-                                .flatMap(instance -> {
-                                    String containerId = instance.getDockerMeta().getContainerId();
+                            return dockerService.createInstanceFromImage(imageName)
+                                .flatMap(meta -> {
+                                    String containerId = meta.getContainerId();
                                     LOGGER.info("mongo db service instance created with ID: [{}], containerId: [{}]", serviceId, containerId);
-                                    DockerMongoServiceEntity entity = new DockerMongoServiceEntity(serviceId, containerId);
+                                    DockerMongoServiceEntity entity = new DockerMongoServiceEntity(serviceId, meta);
                                     return repository.insert(entity);
                                 }).thenReturn(responseBuilder.build());
                         }
@@ -58,7 +56,7 @@ public class DockerMongoServiceInstanceService implements ServiceInstanceService
                     .flatMap(exists -> {
                             if (exists) {
                                 return repository.findById(serviceId)
-                                    .flatMap(entity -> dockerService.deleteContainer(entity.getContainerId()))
+                                    .flatMap(entity -> dockerService.deleteInstance(entity.getMeta()))
                                     .thenReturn(responseBuilder.build());
                                 //.onErrorMap(throwable -> awesomeErrorHandler);
                             } else {

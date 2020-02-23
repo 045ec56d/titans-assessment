@@ -1,5 +1,6 @@
 package com.swisscom.cloud.mongodb.dockerbroker.persistence;
 
+import com.swisscom.cloud.mongodb.dockerbroker.docker.DockerMeta;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -12,26 +13,19 @@ public class DockerMongoServiceEntity {
     @NotNull
     String serviceId;
     @NotNull
-    String containerId;
+    DockerMeta meta;
 
-    public DockerMongoServiceEntity(@NotNull String serviceId, @NotNull String containerId) {
+    public DockerMongoServiceEntity(@NotNull String serviceId, @NotNull DockerMeta meta) {
         this.serviceId = serviceId;
-        this.containerId = containerId;
+        this.meta = meta;
     }
 
     public String getServiceId() {
         return serviceId;
     }
 
-    public void setServiceId(String serviceId) {
-        this.serviceId = serviceId;
+    public DockerMeta getMeta() {
+        return meta;
     }
 
-    public String getContainerId() {
-        return containerId;
-    }
-
-    public void setContainerId(String containerId) {
-        this.containerId = containerId;
-    }
 }

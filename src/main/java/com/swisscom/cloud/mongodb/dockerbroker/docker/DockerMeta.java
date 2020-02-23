@@ -19,7 +19,7 @@ public class DockerMeta {
     private Set<String> networkIds;
 
     @NonNull
-    private Optional<String> volumeId;
+    private Optional<String> volumeId = Optional.empty();
 
     private DockerMeta(String containerId, String imageId, Set<String> networkIds, Optional<String> volumeId) {
         this.containerId = containerId;
@@ -43,7 +43,7 @@ public class DockerMeta {
     }
 
     @NonNull
-    public Set<String> getNetworkId() {
+    public Set<String> getNetworkIds() {
         return networkIds;
     }
 
@@ -69,13 +69,14 @@ public class DockerMeta {
     }
 
     public static final class DockerMetaBuilder {
+        @NonNull
         private String containerId;
-
+        @NonNull
         private String imageId;
-
+        @NonNull
         private Set<String> networkIds = new HashSet<>();
-
-        private Optional<String> volumeId;
+        @NonNull
+        private Optional<String> volumeId = Optional.empty();
 
         public DockerMetaBuilder withContainerId(String id) {
             this.containerId = id;
