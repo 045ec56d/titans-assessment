@@ -40,17 +40,14 @@ public class DockerMongoServiceInstanceService implements ServiceInstanceService
         if (isExists) {
             return Mono.just(CreateServiceInstanceResponse.builder().instanceExisted(true).build());
         } else {
-            new Thread(() -> {
-                LOGGER.debug("started hickity-hackity thread");
+            startThreadWith(
                 dockerService.createInstanceFromImage(imageName)
                     .flatMap(meta -> repository.insert(new DockerMongoServiceEntity(serviceId, meta)))
                     .then(lastOperationRepository.save(new LastOperationEntity(UUID.fromString(serviceId), OperationState.SUCCEEDED)))
-                    .block();
-                LOGGER.debug("deleted lastOperation from DB");
-            }).start();
+            );
 
             return lastOperationRepository.save(new LastOperationEntity(UUID.fromString(serviceId), OperationState.IN_PROGRESS))
-                    .flatMap(o -> Mono.just(CreateServiceInstanceResponse.builder().operation(OperationState.IN_PROGRESS.toString()).build()));
+                .flatMap(o -> Mono.just(CreateServiceInstanceResponse.builder().operation(OperationState.IN_PROGRESS.toString()).build()));
 
         }
 
@@ -63,19 +60,15 @@ public class DockerMongoServiceInstanceService implements ServiceInstanceService
         Boolean isExists = repository.existsById(serviceId).block();
 
         if (isExists) {
-            new Thread(() -> {
-                LOGGER.debug("started hickity-hackity thread");
+            startThreadWith(
                 repository.findById(serviceId)
                     .flatMap(entity -> dockerService.deleteInstance(entity.getMeta()))
                     .then(lastOperationRepository.save(new LastOperationEntity(UUID.fromString(serviceId), OperationState.SUCCEEDED)))
-                    .block();
-                LOGGER.debug("deleted lastOperation from DB");
-            }).start();
+            );
 
             return lastOperationRepository.save(new LastOperationEntity(UUID.fromString(serviceId), OperationState.IN_PROGRESS))
                 .flatMap(o -> Mono.just(DeleteServiceInstanceResponse.builder().operation(OperationState.IN_PROGRESS.toString()).build()));
         } else {
-
             return Mono.error(new RuntimeException("Service does not exist.")); //could be more specific
         }
 
@@ -97,5 +90,12 @@ public class DockerMongoServiceInstanceService implements ServiceInstanceService
                     )
                 )
             );
+    }
+
+    private void startThreadWith(Mono longOperation) {
+        new Thread(() -> {
+            LOGGER.debug("started hickity-hackity thread");
+            longOperation.block();
+        }).start();
     }
 }
