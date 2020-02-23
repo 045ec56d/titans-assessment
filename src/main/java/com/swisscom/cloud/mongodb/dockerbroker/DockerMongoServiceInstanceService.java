@@ -26,34 +26,28 @@ public class DockerMongoServiceInstanceService implements ServiceInstanceService
     public Mono<CreateServiceInstanceResponse> createServiceInstance(CreateServiceInstanceRequest request) {
 
         return Mono.just(request.getServiceInstanceId())
-            .flatMap (
-                serviceId -> mongoDBServiceCreator.createInstance()
-                    .flatMap(instance -> {
-                        String containerId = instance.getDockerMeta().getContainerId();
-                        LOGGER.info("mongo db service instance created with ID: [{}], containerId: [{}]", serviceId, containerId);
-                        DockerMongoServiceEntity entity = new DockerMongoServiceEntity(serviceId, containerId);
-                        return Mono.just(repository.existsById(serviceId)).flatMap(exists -> {
-                            if (exists) return Mono.just(serviceAlreadyExistedResponse);
-                            else return Mono.just(repository.insert(entity)).flatMap(e -> Mono.just(serviceCreatedResponse));
-                        });
+            .flatMap(serviceId -> Mono.just(CreateServiceInstanceResponse.builder())
+                .flatMap(responseBuilder -> repository.existsById(serviceId)
+                    .flatMap(exists -> {
+                        if (exists)
+                            return Mono.just(responseBuilder.instanceExisted(true).build());
+                        else {
+                            return mongoDBServiceCreator.createInstance()
+                                .flatMap(instance -> {
+                                    String containerId = instance.getDockerMeta().getContainerId();
+                                    LOGGER.info("mongo db service instance created with ID: [{}], containerId: [{}]", serviceId, containerId);
+                                    DockerMongoServiceEntity entity = new DockerMongoServiceEntity(serviceId, containerId);
+                                    return repository.insert(entity);
+                                }).thenReturn(responseBuilder.build());
+                        }
                     })
+                )
             );
 
+
+
+
     }
-
-    private CreateServiceInstanceResponse serviceAlreadyExistedResponse = CreateServiceInstanceResponse
-        .builder()
-        .async(true)
-        .instanceExisted(true)
-        .build();
-
-    private CreateServiceInstanceResponse serviceCreatedResponse = CreateServiceInstanceResponse
-        .builder()
-        .async(true)
-        .instanceExisted(false)
-        .build();
-
-
 
     @Override
     public Mono<DeleteServiceInstanceResponse> deleteServiceInstance(DeleteServiceInstanceRequest request) {

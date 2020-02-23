@@ -113,6 +113,6 @@ class DockerMongoDBServiceSpecification extends BaseSpecification {
     String createServiceContainer(String serviceInstanceId) {
         CreateServiceInstanceRequest createReq = createServiceInstanceRequest(serviceInstanceId)
         CreateServiceInstanceResponse resp = dockerMongoService.createServiceInstance(createReq).block()
-        return repository.findById(serviceInstanceId).get().getContainerId()
+        return repository.findById(serviceInstanceId).block().getContainerId() //no composability needed here
     }
 }
