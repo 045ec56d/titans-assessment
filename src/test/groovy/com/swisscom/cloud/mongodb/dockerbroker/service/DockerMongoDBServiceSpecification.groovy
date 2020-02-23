@@ -11,6 +11,9 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.cloud.servicebroker.model.instance.CreateServiceInstanceRequest
 import org.springframework.cloud.servicebroker.model.instance.CreateServiceInstanceResponse
 import org.springframework.cloud.servicebroker.model.instance.DeleteServiceInstanceRequest
+import org.springframework.cloud.servicebroker.model.instance.DeleteServiceInstanceResponse
+import org.springframework.cloud.servicebroker.model.instance.GetLastServiceOperationRequest
+import org.springframework.cloud.servicebroker.model.instance.OperationState
 import org.springframework.test.context.ActiveProfiles
 import reactor.test.StepVerifier
 
@@ -38,22 +41,22 @@ class DockerMongoDBServiceSpecification extends BaseSpecification {
         String containerId = createServiceContainer(id)
 
         when:
-        List<String> ids = new ArrayList<String>()
-        ids.add(containerId)
-        DeleteServiceInstanceRequest deleteReq = DeleteServiceInstanceRequest
-                .builder()
-                .serviceInstanceId(id)
-                .build()
+        DeleteServiceInstanceRequest deleteReq = DeleteServiceInstanceRequest.builder().serviceInstanceId(id).build()
+        DeleteServiceInstanceResponse resp = dockerMongoService.deleteServiceInstance(deleteReq).block()
+
+        GetLastServiceOperationRequest lastOpReq = GetLastServiceOperationRequest.builder().serviceInstanceId(id).build()
+        while (dockerMongoService.getLastOperation(lastOpReq).block().state != OperationState.SUCCEEDED) { //needed to get the actual container ID
+            Thread.sleep(250)
+            LOGGER.debug("service instance [{}] not ready yet", id)
+        }
 
 
         then:
-        StepVerifier.create(dockerMongoService.deleteServiceInstance(deleteReq))
-                .consumeNextWith { response ->
-                    int containersFound = dockerController.getClient().listContainersCmd().withIdFilter(ids).exec().size()
-                    LOGGER.info("found containers: {}", containersFound)
-                    assertThat(containersFound == 0).isTrue()
-                }
-        .verifyComplete()
+        List<String> ids = new ArrayList<String>()
+        ids.add(containerId)
+        int containersFound = dockerController.getClient().listContainersCmd().withIdFilter(ids).exec().size()
+        LOGGER.info("found containers: {}", containersFound)
+        assertThat(containersFound == 0).isTrue()
 
     }
 
@@ -110,6 +113,14 @@ class DockerMongoDBServiceSpecification extends BaseSpecification {
     String createServiceContainer(String serviceInstanceId) {
         CreateServiceInstanceRequest createReq = createServiceInstanceRequest(serviceInstanceId)
         CreateServiceInstanceResponse resp = dockerMongoService.createServiceInstance(createReq).block()
+
+        GetLastServiceOperationRequest lastOpReq = GetLastServiceOperationRequest.builder().serviceInstanceId(serviceInstanceId).build()
+
+        while (dockerMongoService.getLastOperation(lastOpReq).block().state != OperationState.SUCCEEDED) { //needed to get the actual container ID
+            Thread.sleep(250)
+            LOGGER.debug("service instance [{}] not ready yet", serviceInstanceId)
+        }
+
         return repository.findById(serviceInstanceId).block().getMeta().getContainerId() //no composability needed here
     }
 }

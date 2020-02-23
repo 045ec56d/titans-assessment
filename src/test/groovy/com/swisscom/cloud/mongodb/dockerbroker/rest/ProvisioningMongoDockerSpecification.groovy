@@ -90,6 +90,8 @@ class ProvisioningMongoDockerSpecification extends BaseSpecification {
 
                 if (lastServiceOperationResponse.state != OperationState.IN_PROGRESS) {
                     break
+                } else {
+                    LOGGER.info("last operation was [{}]", lastServiceOperationResponse.state)
                 }
 
             Thread.sleep(250)

@@ -1,5 +1,6 @@
 package com.swisscom.cloud.mongodb.dockerbroker.persistence;
 
+import org.springframework.cloud.servicebroker.model.instance.OperationState;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -12,11 +13,13 @@ public class LastOperationEntity {
     @NotNull
     private UUID id;
 
-    public UUID getId() {
-        return id;
+    @NotNull
+    private OperationState state;
+
+    public LastOperationEntity(@NotNull UUID id, @NotNull OperationState state) {
+        this.id = id;
+        this.state = state;
     }
 
-    public void setId(UUID id) {
-        this.id = id;
-    }
+    public OperationState getState() { return this.state; }
 }
