@@ -1,6 +1,9 @@
 package com.swisscom.cloud.mongodb.dockerbroker.rest
 
 import com.swisscom.cloud.mongodb.dockerbroker.BaseSpecification
+import groovy.json.JsonBuilder
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.cloud.servicebroker.model.instance.*
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
@@ -11,6 +14,9 @@ import static java.time.Duration.ofMillis
 
 @ActiveProfiles("test")
 class ProvisioningMongoDockerSpecification extends BaseSpecification {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ProvisioningMongoDockerSpecification.class)
+
     static UUID serviceInstanceId
     static UUID serviceBindingId
 
@@ -34,6 +40,17 @@ class ProvisioningMongoDockerSpecification extends BaseSpecification {
                 build()
     }
 
+//    void 'should return 500 if trying to delete a non-existent service'() {
+//
+//        when:
+//        def exchange = webTestClient.delete()
+//                .uri(String.format("/v2/service_instances/%s?service_id=%s&plan_id=%s", serviceInstanceId, this.SIMPLE_DB_PLAN["service_id"], this.SIMPLE_DB_PLAN["plan_id"]))
+//                .exchange()
+//
+//        then:
+//        exchange.expectStatus().is5xxServerError() //actually this could be something more meaningful.
+//    }
+
     void 'should successfully start provisioning a mongodb service'() {
         given:
         def provisionRequest = CreateServiceInstanceRequest
@@ -44,6 +61,8 @@ class ProvisioningMongoDockerSpecification extends BaseSpecification {
                 .asyncAccepted(true)
                 .parameters("mongodb_port", "27017")
                 .build()
+
+        LOGGER.info("sending request:\n {}", new JsonBuilder(provisionRequest).toPrettyString())
 
         when:
         def exchange = webTestClient.put()

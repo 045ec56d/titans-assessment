@@ -1,12 +1,6 @@
 package com.swisscom.cloud.mongodb.dockerbroker;
 
-import com.github.dockerjava.api.DockerClient;
-import com.github.dockerjava.api.command.CreateContainerResponse;
-import com.github.dockerjava.api.exception.NotFoundException;
-import com.github.dockerjava.api.exception.NotModifiedException;
-import com.github.dockerjava.core.DefaultDockerClientConfig;
-import com.github.dockerjava.core.DockerClientBuilder;
-import com.github.dockerjava.core.DockerClientConfig;
+import com.swisscom.cloud.mongodb.dockerbroker.docker.DockerMongoDBServiceCreator;
 import com.swisscom.cloud.mongodb.dockerbroker.persistence.DockerMongoServiceEntity;
 import com.swisscom.cloud.mongodb.dockerbroker.persistence.DockerMongoServiceRepository;
 import org.slf4j.Logger;
@@ -25,52 +19,64 @@ public class DockerMongoServiceInstanceService implements ServiceInstanceService
     @Autowired
     DockerMongoServiceRepository repository;
 
-    private DockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder()
-            .withDockerHost("unix:///var/run/docker.sock")
-            .build();
-
-    private DockerClient dockerClient = DockerClientBuilder.getInstance(config).build();
+    @Autowired
+    DockerMongoDBServiceCreator mongoDBServiceCreator;
 
     @Override
     public Mono<CreateServiceInstanceResponse> createServiceInstance(CreateServiceInstanceRequest request) {
-        // TODO: implement handling of create/provision
 
+        return Mono.just(request.getServiceInstanceId())
+            .flatMap (
+                serviceId -> mongoDBServiceCreator.createInstance()
+                    .flatMap(instance -> {
+                        String containerId = instance.getDockerMeta().getContainerId();
+                        LOGGER.info("mongo db service instance created with ID: [{}], containerId: [{}]", serviceId, containerId);
+                        DockerMongoServiceEntity entity = new DockerMongoServiceEntity(serviceId, containerId);
+                        return Mono.just(repository.existsById(serviceId)).flatMap(exists -> {
+                            if (exists) return Mono.just(serviceAlreadyExistedResponse);
+                            else return Mono.just(repository.insert(entity)).flatMap(e -> Mono.just(serviceCreatedResponse));
+                        });
+                    })
+            );
 
-        CreateContainerResponse container = dockerClient.createContainerCmd("mongo").exec();
-        dockerClient.startContainerCmd(container.getId()).exec();
-
-        boolean isExisted = repository.existsById(request.getServiceInstanceId());
-        repository.insert(new DockerMongoServiceEntity(request.getServiceInstanceId(), container.getId()));
-
-        CreateServiceInstanceResponse resp =
-                CreateServiceInstanceResponse
-                        .builder()
-                        .async(true)
-                        .instanceExisted(isExisted)
-                        .build();
-
-        return Mono.just(resp);
     }
+
+    private CreateServiceInstanceResponse serviceAlreadyExistedResponse = CreateServiceInstanceResponse
+        .builder()
+        .async(true)
+        .instanceExisted(true)
+        .build();
+
+    private CreateServiceInstanceResponse serviceCreatedResponse = CreateServiceInstanceResponse
+        .builder()
+        .async(true)
+        .instanceExisted(false)
+        .build();
+
+
 
     @Override
     public Mono<DeleteServiceInstanceResponse> deleteServiceInstance(DeleteServiceInstanceRequest request) {
         // TODO: implement handling of delete/deprovision
+//
+//        String serviceInstanceId = request.getServiceInstanceId();
+//
+//        if (repository.existsById(request.getServiceInstanceId())) {
+//            String containerId = repository.findById(serviceInstanceId).get().getContainerId();
+//            try {
+//                dockerClient.stopContainerCmd(containerId).exec();
+//                return Mono.just(DeleteServiceInstanceResponse.builder().build());
+//            } catch (NotFoundException ex) {
+//                return Mono.error(new RuntimeException("service instance not found."));
+//            } catch (NotModifiedException ex) {
+//                return Mono.error(new RuntimeException("There was an error while stopping the service"));
+//            }
+//        }
+//
+//        return Mono.error(new RuntimeException("service instance not found."));
+//
 
-        String serviceInstanceId = request.getServiceInstanceId();
-
-        if (repository.existsById(request.getServiceInstanceId())) {
-            String containerId = repository.findById(serviceInstanceId).get().getContainerId();
-            try {
-                dockerClient.stopContainerCmd(containerId).exec();
-                return Mono.just(DeleteServiceInstanceResponse.builder().build());
-            } catch (NotFoundException ex) {
-                return Mono.error(new RuntimeException("service instance not found."));
-            } catch (NotModifiedException ex) {
-                return Mono.error(new RuntimeException("There was an error while stopping the service"));
-            }
-        }
-
-        return Mono.error(new RuntimeException("service instance not found."));
+        return Mono.just(DeleteServiceInstanceResponse.builder().build());
     }
 
     @Override
