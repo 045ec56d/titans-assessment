@@ -40,16 +40,16 @@ class ProvisioningMongoDockerSpecification extends BaseSpecification {
                 build()
     }
 
-//    void 'should return 500 if trying to delete a non-existent service'() {
-//
-//        when:
-//        def exchange = webTestClient.delete()
-//                .uri(String.format("/v2/service_instances/%s?service_id=%s&plan_id=%s", serviceInstanceId, this.SIMPLE_DB_PLAN["service_id"], this.SIMPLE_DB_PLAN["plan_id"]))
-//                .exchange()
-//
-//        then:
-//        exchange.expectStatus().is5xxServerError() //actually this could be something more meaningful.
-//    }
+    void 'should return 500 if trying to delete a non-existent service'() {
+
+        when:
+        def exchange = webTestClient.delete()
+                .uri(String.format("/v2/service_instances/%s?service_id=%s&plan_id=%s", serviceInstanceId, this.SIMPLE_DB_PLAN["service_id"], this.SIMPLE_DB_PLAN["plan_id"]))
+                .exchange()
+
+        then:
+        exchange.expectStatus().is5xxServerError() //actually this could be something more meaningful.
+    }
 
     void 'should successfully start provisioning a mongodb service'() {
         given:

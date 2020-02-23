@@ -1,10 +1,6 @@
 package com.swisscom.cloud.mongodb.dockerbroker.docker;
 
-import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.model.Container;
-import com.github.dockerjava.core.DefaultDockerClientConfig;
-import com.github.dockerjava.core.DockerClientBuilder;
-import com.github.dockerjava.core.DockerClientConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -36,6 +32,15 @@ public class DockerService extends DockerController {
             return Mono.just(new DockerServiceInstance(meta));
         }
 
+    }
+
+    public final Mono<Void> deleteContainer(String containerId) {
+        LOGGER.info("deleting container with id [{}]", containerId);
+
+        dockerClient.stopContainerCmd(containerId).exec();
+        dockerClient.removeContainerCmd(containerId).exec();
+
+        return Mono.empty();
     }
 
     private DockerMeta createDockerMeta(String containerId, Set<String> networkIds) {

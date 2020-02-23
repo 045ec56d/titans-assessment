@@ -10,7 +10,9 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.cloud.servicebroker.model.instance.CreateServiceInstanceRequest
 import org.springframework.cloud.servicebroker.model.instance.CreateServiceInstanceResponse
+import org.springframework.cloud.servicebroker.model.instance.DeleteServiceInstanceRequest
 import org.springframework.test.context.ActiveProfiles
+import reactor.test.StepVerifier
 
 import static org.assertj.core.api.Assertions.assertThat
 
@@ -30,35 +32,30 @@ class DockerMongoDBServiceSpecification extends BaseSpecification {
 
     void setup() { }
 
-//    void 'should deprovision the requested service only'() {
-//        given:
-//        String id = UUID.randomUUID()
-//        CreateServiceInstanceRequest createReq = CreateServiceInstanceRequest
-//                .builder()
-//                .serviceInstanceId(id)
-//                .build()
-//        dockerMongoService.createServiceInstance(createReq)
-//        String containerId = repository.findById(id).get().getContainerId()
-//
-//        when:
-//        List<String> ids = new ArrayList<String>()
-//        ids.add(containerId)
-//        DeleteServiceInstanceRequest deleteReq = DeleteServiceInstanceRequest
-//                .builder()
-//                .serviceInstanceId(id)
-//                .build()
-//
-//
-//        then:
-//        StepVerifier.create(dockerMongoService.deleteServiceInstance(deleteReq))
-//                .consumeNextWith { response ->
-//                    int containersFound = dockerClient.listContainersCmd().withIdFilter(ids).exec().size()
-//                    LOGGER.info("found containers: {}", containersFound)
-//                    assertThat(containersFound == 0).isTrue()
-//                }
-//        .verifyComplete()
-//
-//    }
+    void 'should deprovision the requested service only'() {
+        given:
+        String id = UUID.randomUUID()
+        String containerId = createServiceContainer(id)
+
+        when:
+        List<String> ids = new ArrayList<String>()
+        ids.add(containerId)
+        DeleteServiceInstanceRequest deleteReq = DeleteServiceInstanceRequest
+                .builder()
+                .serviceInstanceId(id)
+                .build()
+
+
+        then:
+        StepVerifier.create(dockerMongoService.deleteServiceInstance(deleteReq))
+                .consumeNextWith { response ->
+                    int containersFound = dockerController.getClient().listContainersCmd().withIdFilter(ids).exec().size()
+                    LOGGER.info("found containers: {}", containersFound)
+                    assertThat(containersFound == 0).isTrue()
+                }
+        .verifyComplete()
+
+    }
 
 
     void 'should be able to provision multiple instances'() {
