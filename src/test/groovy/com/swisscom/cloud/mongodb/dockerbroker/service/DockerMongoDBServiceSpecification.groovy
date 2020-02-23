@@ -64,8 +64,13 @@ class DockerMongoDBServiceSpecification extends BaseSpecification {
         then:
         StepVerifier.create(dockerMongoService.deleteServiceInstance(deleteReq))
                 .consumeNextWith { response ->
-                    assertThat(dockerClient.listContainersCmd().withIdFilter(ids).exec().size() == 0)
+                    int containersFound = dockerClient.listContainersCmd().withIdFilter(ids).exec().size()
+                    LOGGER.info("found containers: {}", containersFound)
+                    assertThat(containersFound == 0).isTrue()
                 }
+        .verifyComplete()
 
     }
+
+//    void 'should be able to provision multiple instances'(){}
 }
