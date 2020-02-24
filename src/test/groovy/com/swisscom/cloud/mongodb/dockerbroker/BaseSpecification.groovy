@@ -58,4 +58,12 @@ abstract class BaseSpecification extends Specification {
             inited = true
         }
     }
+
+    def cleanupSpec() {
+        if (inited) {
+            environment.stop()
+            LOGGER.info("Docker compose services stopped")
+            inited = false
+        }
+    }
 }

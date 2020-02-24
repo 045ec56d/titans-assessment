@@ -40,11 +40,12 @@ public class DockerMongoServiceInstanceService implements ServiceInstanceService
         if (isExists) {
             return Mono.just(CreateServiceInstanceResponse.builder().instanceExisted(true).build());
         } else {
-            startThreadWith(
+            new Thread(() -> {
+                LOGGER.debug("started hickity-hackity thread");
                 dockerService.createInstanceFromImage(imageName)
                     .flatMap(meta -> repository.insert(new DockerMongoServiceEntity(serviceId, meta)))
-                    .then(lastOperationRepository.save(new LastOperationEntity(UUID.fromString(serviceId), OperationState.SUCCEEDED)))
-            );
+                    .then(lastOperationRepository.save(new LastOperationEntity(UUID.fromString(serviceId), OperationState.SUCCEEDED))).block();
+            }).start();
 
             return lastOperationRepository.save(new LastOperationEntity(UUID.fromString(serviceId), OperationState.IN_PROGRESS))
                 .flatMap(o -> Mono.just(CreateServiceInstanceResponse.builder().operation(OperationState.IN_PROGRESS.toString()).build()));
@@ -60,11 +61,12 @@ public class DockerMongoServiceInstanceService implements ServiceInstanceService
         Boolean isExists = repository.existsById(serviceId).block();
 
         if (isExists) {
-            startThreadWith(
+            new Thread(() -> {
+                LOGGER.debug("started hickity-hackity thread");
                 repository.findById(serviceId)
                     .flatMap(entity -> dockerService.deleteInstance(entity.getMeta()))
-                    .then(lastOperationRepository.save(new LastOperationEntity(UUID.fromString(serviceId), OperationState.SUCCEEDED)))
-            );
+                    .then(lastOperationRepository.save(new LastOperationEntity(UUID.fromString(serviceId), OperationState.SUCCEEDED))).block();
+            }).start();
 
             return lastOperationRepository.save(new LastOperationEntity(UUID.fromString(serviceId), OperationState.IN_PROGRESS))
                 .flatMap(o -> Mono.just(DeleteServiceInstanceResponse.builder().operation(OperationState.IN_PROGRESS.toString()).build()));
@@ -90,12 +92,5 @@ public class DockerMongoServiceInstanceService implements ServiceInstanceService
                     )
                 )
             );
-    }
-
-    private void startThreadWith(Mono longOperation) {
-        new Thread(() -> {
-            LOGGER.debug("started hickity-hackity thread");
-            longOperation.block();
-        }).start();
     }
 }

@@ -15,7 +15,6 @@ import org.springframework.cloud.servicebroker.model.instance.DeleteServiceInsta
 import org.springframework.cloud.servicebroker.model.instance.GetLastServiceOperationRequest
 import org.springframework.cloud.servicebroker.model.instance.OperationState
 import org.springframework.test.context.ActiveProfiles
-import reactor.test.StepVerifier
 
 import static org.assertj.core.api.Assertions.assertThat
 
@@ -44,11 +43,7 @@ class DockerMongoDBServiceSpecification extends BaseSpecification {
         DeleteServiceInstanceRequest deleteReq = DeleteServiceInstanceRequest.builder().serviceInstanceId(id).build()
         DeleteServiceInstanceResponse resp = dockerMongoService.deleteServiceInstance(deleteReq).block()
 
-        GetLastServiceOperationRequest lastOpReq = GetLastServiceOperationRequest.builder().serviceInstanceId(id).build()
-        while (dockerMongoService.getLastOperation(lastOpReq).block().state != OperationState.SUCCEEDED) { //needed to get the actual container ID
-            Thread.sleep(250)
-            LOGGER.debug("service instance [{}] not ready yet", id)
-        }
+        waitUntilSucceeded(id)
 
 
         then:
@@ -114,13 +109,21 @@ class DockerMongoDBServiceSpecification extends BaseSpecification {
         CreateServiceInstanceRequest createReq = createServiceInstanceRequest(serviceInstanceId)
         CreateServiceInstanceResponse resp = dockerMongoService.createServiceInstance(createReq).block()
 
-        GetLastServiceOperationRequest lastOpReq = GetLastServiceOperationRequest.builder().serviceInstanceId(serviceInstanceId).build()
-
-        while (dockerMongoService.getLastOperation(lastOpReq).block().state != OperationState.SUCCEEDED) { //needed to get the actual container ID
-            Thread.sleep(250)
-            LOGGER.debug("service instance [{}] not ready yet", serviceInstanceId)
-        }
+        waitUntilSucceeded(serviceInstanceId)
 
         return repository.findById(serviceInstanceId).block().getMeta().getContainerId() //no composability needed here
     }
+
+    def waitUntilSucceeded(String serviceId) {
+        GetLastServiceOperationRequest lastOpReq = GetLastServiceOperationRequest.builder().serviceInstanceId(serviceId).build()
+
+        int counter = 0
+        while (dockerMongoService.getLastOperation(lastOpReq).block().state != OperationState.SUCCEEDED || counter > 100) { //needed to get the actual container ID
+            Thread.sleep(250)
+            LOGGER.debug("service instance [{}] not ready yet", serviceId)
+            counter++
+        }
+
+    }
+
 }
